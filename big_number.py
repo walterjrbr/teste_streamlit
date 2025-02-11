@@ -121,4 +121,4 @@ st.markdown(f"<h3 style='color: {impact_color}; text-align: center;'>{impact_mes
 
 # Simulação dinâmica
 if st.button("🔄 Atualizar Dados"):
-    st.experimental_rerun()
+    st.rerun()
