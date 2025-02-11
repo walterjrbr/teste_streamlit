@@ -1,38 +1,125 @@
-#!/usr/bin/env python
-# coding: utf-8
+# %%writefile app_bignumber_complexo.py
 
-# In[4]:
+import streamlit as st
+import pandas as pd
+import numpy as np
+import plotly.express as px
+import plotly.graph_objects as go
 
+# Configuração da página
+st.set_page_config(layout="wide", page_title="Dashboard Avançado de Infraestrutura e Negócios")
 
-# %%writefile app_bignumber.py
+# Simulação inicial de dados
+np.random.seed(42)
+time_series = pd.date_range(start="10:00", periods=50, freq="T")
 
+cpu_usage = np.random.uniform(30, 60, 50)
+mem_usage = np.random.uniform(40, 70, 50)
+disk_usage = np.random.uniform(20, 85, 50)
+tps = np.random.uniform(100, 500, 50)
+latency = np.random.uniform(50, 200, 50)
+iops = np.random.uniform(500, 1500, 50)
+network = np.random.uniform(100, 1000, 50)
+errors = np.random.uniform(0, 5, 50)
 
-# In[31]:
+# Criar DataFrame
+df = pd.DataFrame({
+    "Tempo": time_series,
+    "CPU (%)": cpu_usage,
+    "Memória (%)": mem_usage,
+    "Disco (%)": disk_usage,
+    "TPS": tps,
+    "Latência (ms)": latency,
+    "IOPS": iops,
+    "Rede (Mbps)": network,
+    "Erros": errors
+})
 
+# Configuração do TPS dinâmico
+st.sidebar.markdown("## ⚙️ **Simulação de Carga**")
+user_tps = st.sidebar.slider("Ajuste o TPS (Transações por Segundo)", 50, 1500, int(tps[-1]))
 
-get_ipython().run_cell_magic('writefile', 'app_bignumber.py', '\nimport streamlit as st\nimport pandas as pd\nimport numpy as np\nimport plotly.express as px\nimport plotly.graph_objects as go\n\n# Configuração da página\nst.set_page_config(layout="wide", page_title="Dashboard de Infraestrutura")\n\n# Simulação inicial de dados\nnp.random.seed(42)\ntime_series = pd.date_range(start="10:00", periods=50, freq="T")\ncpu_usage = np.random.uniform(30, 60, 50)  # Ajustado para valores mais realistas\nmem_usage = np.random.uniform(40, 70, 50)\ndisk_usage = np.random.uniform(20, 85, 50)\ntps = np.random.uniform(100, 500, 50)  # Transações por segundo\n\n# Criar DataFrame\ndf = pd.DataFrame({\n    "Tempo": time_series,\n    "CPU (%)": cpu_usage,\n    "Memória (%)": mem_usage,\n    "Disco (%)": disk_usage,\n    "TPS": tps\n})\n\n# Configuração do TPS dinâmico\nst.sidebar.markdown("## ⚙️ **Simulação de Carga**")\nuser_tps = st.sidebar.slider("Ajuste o TPS (Transações por Segundo)", 50, 1500, int(tps[-1]))\n\n# Cálculo dinâmico do impacto no sistema\nimpact_message = ""\nimpact_color = "white"\n\n# Ajustando CPU e Memória com uma curva mais realista\ntps_base = tps[-1]  # Último valor histórico como referência\n\nif user_tps > tps_base * 1.5:  # Aumento maior que 50%\n    cpu_impact = min(100, cpu_usage[-1] * 1.8)  # CPU entre 90-100%\n    mem_impact = min(100, mem_usage[-1] * 1.7)  # Memória entre 85-100%\n    impact_message = "ALTA DEMANDA! Sistema próximo do limite operacional."\n    impact_color = "red"\nelif user_tps > tps_base * 1.3:  # Aumento entre 30-50%\n    cpu_impact = min(90, cpu_usage[-1] * 1.5)  # CPU entre 80-90%\n    mem_impact = min(90, mem_usage[-1] * 1.4)  # Memória entre 75-90%\n    impact_message = "SISTEMA SOB CARGA! Monitoramento recomendado."\n    impact_color = "orange"\nelif user_tps < tps_base * 0.7:  # Queda maior que 30%\n    cpu_impact = max(20, cpu_usage[-1] * 0.7)\n    mem_impact = max(20, mem_usage[-1] * 0.65)\n    impact_message = "QUEDA NAS TRANSAÇÕES! Possível desperdício de recursos."\n    impact_color = "blue"\nelse:\n    cpu_impact = cpu_usage[-1]\n    mem_impact = mem_usage[-1]\n    impact_message = "Sistema operando dentro da normalidade."\n    impact_color = "green"\n\n# Valores finais\nlatest_cpu = round(cpu_impact, 1)\nlatest_mem = round(mem_impact, 1)\nlatest_disk = round(disk_usage[-1], 1)\nlatest_tps = user_tps\n\n# Layout do Dashboard\nst.markdown("## 📊 **Dashboard de Infraestrutura - Monitoramento em Tempo Real**")\nst.markdown("### 📌 Visão geral do sistema")\n\n# Criando colunas para os medidores circulares\ncol1, col2, col3, col4 = st.columns(4)\n\n# Função para criar gauge (relógio circular)\ndef create_gauge(title, value, color):\n    fig = go.Figure(go.Indicator(\n        mode="gauge+number",\n        value=value,\n        title={"text": title, "font": {"size": 20}},\n        gauge={\n            "axis": {"range": [0, 110]},  # Ajustado para até 110% para simular sobrecarga\n            "bar": {"color": color},\n            "steps": [\n                {"range": [0, 50], "color": "lightgray"},\n                {"range": [50, 75], "color": "yellow"},\n                {"range": [75, 100], "color": "red"},\n                {"range": [100, 110], "color": "darkred"}  # Representa sobrecarga extrema\n            ],\n        },\n    ))\n    fig.update_layout(height=250)\n    return fig\n\n# Exibir os medidores circulares\nwith col1:\n    st.plotly_chart(create_gauge("CPU (%)", latest_cpu, "red"), use_container_width=True)\n\nwith col2:\n    st.plotly_chart(create_gauge("Memória (%)", latest_mem, "blue"), use_container_width=True)\n\nwith col3:\n    st.plotly_chart(create_gauge("Disco (%)", latest_disk, "green"), use_container_width=True)\n\nwith col4:\n    st.plotly_chart(create_gauge("TPS", latest_tps, "purple"), use_container_width=True)\n\n# Gráficos de Tendências\nst.markdown("---")\nst.markdown("### 📈 **Tendências de Utilização**")\n\nfig = px.line(df, x="Tempo", y=["CPU (%)", "Memória (%)", "Disco (%)", "TPS"], \n              labels={"value": "Uso (%)", "variable": "Recurso"}, \n              title="Evolução do Uso dos Recursos do Sistema",\n              template="plotly_dark")\n\nfig.update_layout(height=400, width=1000)\nst.plotly_chart(fig, use_container_width=True)\n\n# 🔥 Impacto no Negócio\nst.markdown("---")\nst.markdown("## **Impacto no Negócio**")\n\nst.markdown(f"<h3 style=\'color: {impact_color}; text-align: center;\'>{impact_message}</h3>", unsafe_allow_html=True)\n\n# Atualização dinâmica\nif st.button("🔄 Atualizar Dados"):\n    st.experimental_rerun()\n')
+# Ajustando CPU e Memória com base no TPS
+tps_base = tps[-1]
+if user_tps > tps_base * 1.5:
+    cpu_impact = min(100, cpu_usage[-1] * 1.8)
+    mem_impact = min(100, mem_usage[-1] * 1.7)
+    impact_message = "ALTA DEMANDA! Sistema próximo do limite operacional."
+    impact_color = "red"
+elif user_tps > tps_base * 1.3:
+    cpu_impact = min(90, cpu_usage[-1] * 1.5)
+    mem_impact = min(90, mem_usage[-1] * 1.4)
+    impact_message = "SISTEMA SOB CARGA! Monitoramento recomendado."
+    impact_color = "orange"
+else:
+    cpu_impact = cpu_usage[-1]
+    mem_impact = mem_usage[-1]
+    impact_message = "Sistema operando dentro da normalidade."
+    impact_color = "green"
 
+# Criando colunas para os indicadores
+st.markdown("## 📊 **Dashboard Avançado - Infraestrutura e Negócios**")
+col1, col2, col3, col4, col5, col6 = st.columns(6)
 
-# In[32]:
+# Função para criar gauge (relógio circular)
+def create_gauge(title, value, color):
+    fig = go.Figure(go.Indicator(
+        mode="gauge+number",
+        value=value,
+        title={"text": title, "font": {"size": 20}},
+        gauge={
+            "axis": {"range": [0, 110]},
+            "bar": {"color": color},
+            "steps": [
+                {"range": [0, 50], "color": "lightgray"},
+                {"range": [50, 75], "color": "yellow"},
+                {"range": [75, 100], "color": "red"},
+                {"range": [100, 110], "color": "darkred"}
+            ],
+        },
+    ))
+    fig.update_layout(height=250)
+    return fig
 
+with col1:
+    st.plotly_chart(create_gauge("CPU (%)", round(cpu_impact, 1), "red"), use_container_width=True)
 
-get_ipython().system('streamlit run app_bignumber.py')
+with col2:
+    st.plotly_chart(create_gauge("Memória (%)", round(mem_impact, 1), "blue"), use_container_width=True)
 
+with col3:
+    st.plotly_chart(create_gauge("Disco (%)", round(disk_usage[-1], 1), "green"), use_container_width=True)
 
-# In[33]:
+with col4:
+    st.plotly_chart(create_gauge("TPS", user_tps, "purple"), use_container_width=True)
 
+with col5:
+    st.plotly_chart(create_gauge("Latência (ms)", round(latency[-1], 1), "orange"), use_container_width=True)
 
-get_ipython().run_cell_magic('writefile', 'app_bignumber_complexo.py', '\nimport streamlit as st\nimport pandas as pd\nimport numpy as np\nimport plotly.express as px\nimport plotly.graph_objects as go\n\n# Configuração da página\nst.set_page_config(layout="wide", page_title="Dashboard Avançado de Infraestrutura e Negócios")\n\n# Simulação inicial de dados\nnp.random.seed(42)\ntime_series = pd.date_range(start="10:00", periods=50, freq="T")\n\ncpu_usage = np.random.uniform(30, 60, 50)\nmem_usage = np.random.uniform(40, 70, 50)\ndisk_usage = np.random.uniform(20, 85, 50)\ntps = np.random.uniform(100, 500, 50)\nlatency = np.random.uniform(50, 200, 50)\niops = np.random.uniform(500, 1500, 50)\nnetwork = np.random.uniform(100, 1000, 50)\nerrors = np.random.uniform(0, 5, 50)\n\n# Criar DataFrame\ndf = pd.DataFrame({\n    "Tempo": time_series,\n    "CPU (%)": cpu_usage,\n    "Memória (%)": mem_usage,\n    "Disco (%)": disk_usage,\n    "TPS": tps,\n    "Latência (ms)": latency,\n    "IOPS": iops,\n    "Rede (Mbps)": network,\n    "Erros": errors\n})\n\n# Configuração do TPS dinâmico\nst.sidebar.markdown("## ⚙️ **Simulação de Carga**")\nuser_tps = st.sidebar.slider("Ajuste o TPS (Transações por Segundo)", 50, 1500, int(tps[-1]))\n\n# Ajustando CPU e Memória com base no TPS\ntps_base = tps[-1]\nif user_tps > tps_base * 1.5:\n    cpu_impact = min(100, cpu_usage[-1] * 1.8)\n    mem_impact = min(100, mem_usage[-1] * 1.7)\n    impact_message = "ALTA DEMANDA! Sistema próximo do limite operacional."\n    impact_color = "red"\nelif user_tps > tps_base * 1.3:\n    cpu_impact = min(90, cpu_usage[-1] * 1.5)\n    mem_impact = min(90, mem_usage[-1] * 1.4)\n    impact_message = "SISTEMA SOB CARGA! Monitoramento recomendado."\n    impact_color = "orange"\nelse:\n    cpu_impact = cpu_usage[-1]\n    mem_impact = mem_usage[-1]\n    impact_message = "Sistema operando dentro da normalidade."\n    impact_color = "green"\n\n# Criando colunas para os indicadores\nst.markdown("## 📊 **Dashboard Avançado - Infraestrutura e Negócios**")\ncol1, col2, col3, col4, col5, col6 = st.columns(6)\n\n# Função para criar gauge (relógio circular)\ndef create_gauge(title, value, color):\n    fig = go.Figure(go.Indicator(\n        mode="gauge+number",\n        value=value,\n        title={"text": title, "font": {"size": 20}},\n        gauge={\n            "axis": {"range": [0, 110]},\n            "bar": {"color": color},\n            "steps": [\n                {"range": [0, 50], "color": "lightgray"},\n                {"range": [50, 75], "color": "yellow"},\n                {"range": [75, 100], "color": "red"},\n                {"range": [100, 110], "color": "darkred"}\n            ],\n        },\n    ))\n    fig.update_layout(height=250)\n    return fig\n\nwith col1:\n    st.plotly_chart(create_gauge("CPU (%)", round(cpu_impact, 1), "red"), use_container_width=True)\n\nwith col2:\n    st.plotly_chart(create_gauge("Memória (%)", round(mem_impact, 1), "blue"), use_container_width=True)\n\nwith col3:\n    st.plotly_chart(create_gauge("Disco (%)", round(disk_usage[-1], 1), "green"), use_container_width=True)\n\nwith col4:\n    st.plotly_chart(create_gauge("TPS", user_tps, "purple"), use_container_width=True)\n\nwith col5:\n    st.plotly_chart(create_gauge("Latência (ms)", round(latency[-1], 1), "orange"), use_container_width=True)\n\nwith col6:\n    st.plotly_chart(create_gauge("Erros", round(errors[-1], 1), "gray"), use_container_width=True)\n\n# Gráficos de Tendências\nst.markdown("---")\nst.markdown("### 📈 **Tendências de Utilização**")\nfig = px.line(df, x="Tempo", y=["CPU (%)", "Memória (%)", "Disco (%)", "TPS", "Latência (ms)", "Erros"],\n              labels={"value": "Uso (%)", "variable": "Recurso"},\n              title="Evolução do Uso dos Recursos do Sistema",\n              template="plotly_dark")\nst.plotly_chart(fig, use_container_width=True)\n\n# Heatmap de Correlação\nst.markdown("---")\nst.markdown("### 🔍 **Correlação entre Métricas**")\ncorrelation_matrix = df.drop(columns=["Tempo"]).corr()\nfig_corr = px.imshow(correlation_matrix, text_auto=True, title="Matriz de Correlação", template="plotly_dark")\nst.plotly_chart(fig_corr, use_container_width=True)\n\n# Impacto nos Negócios\nst.markdown("---")\nst.markdown("## **Impacto nos Negócios**")\nst.markdown(f"<h3 style=\'color: {impact_color}; text-align: center;\'>{impact_message}</h3>", unsafe_allow_html=True)\n\n# Simulação dinâmica\nif st.button("🔄 Atualizar Dados"):\n    st.experimental_rerun()\n')
+with col6:
+    st.plotly_chart(create_gauge("Erros", round(errors[-1], 1), "gray"), use_container_width=True)
 
+# Gráficos de Tendências
+st.markdown("---")
+st.markdown("### 📈 **Tendências de Utilização**")
+fig = px.line(df, x="Tempo", y=["CPU (%)", "Memória (%)", "Disco (%)", "TPS", "Latência (ms)", "Erros"],
+              labels={"value": "Uso (%)", "variable": "Recurso"},
+              title="Evolução do Uso dos Recursos do Sistema",
+              template="plotly_dark")
+st.plotly_chart(fig, use_container_width=True)
 
-# In[35]:
+# Heatmap de Correlação
+st.markdown("---")
+st.markdown("### 🔍 **Correlação entre Métricas**")
+correlation_matrix = df.drop(columns=["Tempo"]).corr()
+fig_corr = px.imshow(correlation_matrix, text_auto=True, title="Matriz de Correlação", template="plotly_dark")
+st.plotly_chart(fig_corr, use_container_width=True)
 
+# Impacto nos Negócios
+st.markdown("---")
+st.markdown("## **Impacto nos Negócios**")
+st.markdown(f"<h3 style='color: {impact_color}; text-align: center;'>{impact_message}</h3>", unsafe_allow_html=True)
 
-get_ipython().system('streamlit run app_bignumber_complexo.py')
-
-
-# In[ ]:
-
-
-nbconvert 
-
+# Simulação dinâmica
+if st.button("🔄 Atualizar Dados"):
+    st.experimental_rerun()
