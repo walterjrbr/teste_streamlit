@@ -35,18 +35,21 @@ df = pd.DataFrame({
     "Consultas Fatura": bill_queries
 })
 
-# Configuração do TPS dinâmico
+# Configuração do TPS e Consultas de Fatura dinâmicos
 st.sidebar.markdown("## ⚙️ **Simulação de Carga**")
 user_tps = st.sidebar.slider("Ajuste o TPS (Transações por Segundo)", 50, 1500, int(tps[-1]))
+user_bill_queries = st.sidebar.slider("Ajuste o Volume de Consultas de Fatura", 0, 100000, int(bill_queries[-1]))
 
-# Ajustando CPU e Memória com base no TPS
+# Ajustando CPU e Memória com base no TPS e Consultas de Fatura
 tps_base = tps[-1]
-if user_tps > tps_base * 1.5:
+bill_queries_base = bill_queries[-1]
+
+if user_tps > tps_base * 1.5 or user_bill_queries > bill_queries_base * 1.5:
     cpu_impact = min(100, cpu_usage[-1] * 1.8)
     mem_impact = min(100, mem_usage[-1] * 1.7)
     impact_message = "ALTA DEMANDA! Sistema próximo do limite operacional."
     impact_color = "red"
-elif user_tps > tps_base * 1.3:
+elif user_tps > tps_base * 1.3 or user_bill_queries > bill_queries_base * 1.3:
     cpu_impact = min(90, cpu_usage[-1] * 1.5)
     mem_impact = min(90, mem_usage[-1] * 1.4)
     impact_message = "SISTEMA SOB CARGA! Monitoramento recomendado."
@@ -99,7 +102,7 @@ with col6:
     st.plotly_chart(create_gauge("Erros", round(errors[-1], 1), 10, "gray"), use_container_width=True)
 
 with col7:
-    st.plotly_chart(create_gauge("Consultas Fatura", round(bill_queries[-1], 1), 100000, "cyan"), use_container_width=True)
+    st.plotly_chart(create_gauge("Consultas Fatura", user_bill_queries, 100000, "cyan"), use_container_width=True)
 
 # Gráficos de Tendências
 st.markdown("---")
@@ -109,18 +112,6 @@ fig = px.line(df, x="Tempo", y=["CPU (%)", "Memória (%)", "Disco (%)", "TPS", "
               title="Evolução do Uso dos Recursos do Sistema",
               template="plotly_dark")
 st.plotly_chart(fig, use_container_width=True)
-
-# Heatmap de Correlação
-st.markdown("---")
-st.markdown("### 🔍 **Correlação entre Métricas**")
-correlation_matrix = df.drop(columns=["Tempo"]).corr()
-fig_corr = px.imshow(correlation_matrix, text_auto=True, title="Matriz de Correlação", template="plotly_dark")
-st.plotly_chart(fig_corr, use_container_width=True)
-
-# Impacto nos Negócios
-st.markdown("---")
-st.markdown("## **Impacto nos Negócios**")
-st.markdown(f"<h3 style='color: {impact_color}; text-align: center;'>{impact_message}</h3>", unsafe_allow_html=True)
 
 # Simulação dinâmica
 if st.button("🔄 Atualizar Dados"):
