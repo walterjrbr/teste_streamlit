@@ -113,6 +113,18 @@ fig = px.line(df, x="Tempo", y=["CPU (%)", "Memória (%)", "Disco (%)", "TPS", "
               template="plotly_dark")
 st.plotly_chart(fig, use_container_width=True)
 
+# Heatmap de Correlação
+st.markdown("---")
+st.markdown("### 🔍 **Correlação entre Métricas**")
+correlation_matrix = df.drop(columns=["Tempo"]).corr()
+fig_corr = px.imshow(correlation_matrix, text_auto=True, title="Matriz de Correlação", template="plotly_dark")
+st.plotly_chart(fig_corr, use_container_width=True)
+
+# Impacto nos Negócios
+st.markdown("---")
+st.markdown("## **Impacto nos Negócios**")
+st.markdown(f"<h3 style='color: {impact_color}; text-align: center;'>{impact_message}</h3>", unsafe_allow_html=True)
+
 # Simulação dinâmica
 if st.button("🔄 Atualizar Dados"):
     st.rerun()
